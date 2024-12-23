@@ -1,0 +1,55 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: 100vh;
+    margin: 0;
+    background-color: #f4f4f4;
+    font-family: Arial, sans-serif;
+}
+
+.wheel-container {
+    position: relative;
+}
+
+canvas {
+    background-color: #ffffff;
+    border-radius: 50%;
+}
+
+.pointer {
+    position: absolute;
+    right: -60px; /* Move pointer outside the pie chart */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 60px;
+    height: 60px;
+    z-index: 10;
+}
+
+.center-image {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid white;
+}
+
+.spin-button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 20px;
+    background-color: #007BFF;
+    color: #ffffff;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.spin-button:hover {
+    background-color: #0056b3;
+}
