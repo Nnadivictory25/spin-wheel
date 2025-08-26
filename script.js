@@ -2,25 +2,28 @@ const canvas = document.getElementById('spinWheel');
 const ctx = canvas.getContext('2d');
 
 const sections = [
-    'TRY AGAIN',
-    'QUIZ 10 USDC',
-    '5 USDC',
-    '1 SUI',
-    'NOTHING',
-    'FOOD',
-    'SNACK',
-    'MERCH',
-    'AIRTIME',
-    '5000 NAIRA',
-    '1 WATER'
+    { name: 'TRY AGAIN', weight: 25 },      // Reduced from 30
+    { name: 'QUIZ 10 USDC', weight: 3 },
+    { name: '5 USDC', weight: 5 },
+    { name: '1 SUI', weight: 4 },
+    { name: 'NOTHING', weight: 20 },        // Reduced from 25
+    { name: 'FOOD', weight: 10 },           // Reduced from 12
+    { name: 'SNACK', weight: 8 },           // Reduced from 10
+    { name: 'MERCH', weight: 6 },
+    { name: '2K AIRTIME', weight: 3 },
+    { name: '5000 NAIRA', weight: 1 },
+    { name: '1 WATER', weight: 10 }         // Increased from 1 to 10
 ];
+
+// Extract section names for display
+const sectionNames = sections.map(section => section.name);
 const colors = [
     '#4DA2FF', '#6BB3FF', '#1A8CFF', '#3D9FFF', '#5CADFF',
     '#0A7AFF', '#2F96FF', '#4AA1FF', '#75B8FF', '#1E8EFF', '#38A0FF'
 ];
 
 const wheelRadius = canvas.width / 2;
-const arcSize = (2 * Math.PI) / sections.length;
+const arcSize = (2 * Math.PI) / sectionNames.length;
 let currentAngle = 0;
 let spinSpeed = 0;
 let isSpinning = false;
@@ -30,7 +33,7 @@ function drawWheel() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let startAngle = currentAngle;
 
-    sections.forEach((amount, index) => {
+    sectionNames.forEach((amount, index) => {
         const endAngle = startAngle + arcSize;
 
         // Draw slice
@@ -62,25 +65,76 @@ function spinWheel() {
     if (isSpinning) return;
 
     isSpinning = true;
-    const initialSpinSpeed = Math.random() * 10 + 20; // Initial spin speed
-    spinSpeed = initialSpinSpeed;
-    const spinDuration = Math.random() * 5000 + 5000; // Spin time: 5-10 seconds
-    const deceleration = spinSpeed / (spinDuration / 20); // Gradual slowdown per frame
+
+    // Disable spin button while spinning
+    const spinButton = document.querySelector('.spin-button');
+    spinButton.disabled = true;
+    spinButton.style.opacity = '0.6';
+    spinButton.style.cursor = 'not-allowed';
+
+    // Pre-determine the weighted result
+    const predeterminedResult = getWeightedRandomResult();
+    const targetIndex = sectionNames.indexOf(predeterminedResult);
+
+    // Calculate initial parameters for natural deceleration to target
+    const extraSpins = Math.floor(Math.random() * 3 + 3) * 2 * Math.PI; // 3-6 full rotations
+    const targetAngle = -(targetIndex * arcSize) - (arcSize / 2); // Target section center
+    const totalRotation = extraSpins + (targetAngle - (currentAngle % (2 * Math.PI)));
+
+    // Calculate realistic physics for smooth deceleration
+    const spinDuration = Math.random() * 4000 + 6000; // 6-10 seconds
+    const totalFrames = spinDuration / 20; // 20ms per frame
+    let frame = 0;
+
+    console.log(`🎯 Target: ${predeterminedResult} (index: ${targetIndex})`);
+
+    const startAngle = currentAngle;
+    const endAngle = startAngle + totalRotation;
 
     playTicklingSound();
 
     const spinInterval = setInterval(() => {
-        currentAngle += spinSpeed * Math.PI / 180; // Convert degrees to radians
-        spinSpeed -= deceleration;
+        frame++;
 
-        // Update sound speed to match spin speed
-        updateSoundSpeed(spinSpeed, initialSpinSpeed);
+        // Simple ease-out (starts fast, gradually slows)
+        const progress = frame / totalFrames;
+        const easeOut = 1 - Math.pow(1 - progress, 2); // Quadratic ease-out (less aggressive than cubic)
 
-        if (spinSpeed <= 0) {
+        // Calculate current angle based on easing
+        currentAngle = startAngle + (totalRotation * easeOut);
+
+        // Calculate current speed for sound synchronization
+        const prevProgress = Math.max(0, (frame - 1) / totalFrames);
+        const prevEaseOut = 1 - Math.pow(1 - prevProgress, 2);
+        const currentSpeed = (easeOut - prevEaseOut) * totalRotation * 50; // Convert to approximate degrees/sec
+
+        // Update sound speed to match current speed
+        if (spinSound) {
+            const speedRatio = currentSpeed / (totalRotation * 0.02); // Normalize
+            const playbackRate = Math.max(0.3, Math.min(1.5, 0.3 + speedRatio * 1.2));
+            spinSound.playbackRate = playbackRate;
+        }
+
+        if (frame >= totalFrames) {
+            // Natural stop at exact target
+            currentAngle = endAngle;
+
             clearInterval(spinInterval);
             isSpinning = false;
-            showResult();
-            stopTicklingSound(); // Stop sound when spin ends
+            stopTicklingSound();
+
+            // Re-enable spin button
+            const spinButton = document.querySelector('.spin-button');
+            if (!localStorage.getItem('spinResult')) { // Only re-enable if user hasn't won yet
+                spinButton.disabled = false;
+                spinButton.style.opacity = '1';
+                spinButton.style.cursor = 'pointer';
+            }
+
+            // Add delay before showing result
+            setTimeout(() => {
+                showResult(predeterminedResult);
+            }, 800);
         }
 
         drawWheel();
@@ -88,6 +142,22 @@ function spinWheel() {
 }
 
 let spinSound;
+
+// Weighted random selection function
+function getWeightedRandomResult() {
+    const totalWeight = sections.reduce((sum, section) => sum + section.weight, 0);
+    let randomNum = Math.random() * totalWeight;
+
+    for (let i = 0; i < sections.length; i++) {
+        randomNum -= sections[i].weight;
+        if (randomNum <= 0) {
+            return sections[i].name;
+        }
+    }
+
+    // Fallback (should never reach here)
+    return sections[0].name;
+}
 
 // Play tickling sound
 function playTicklingSound() {
@@ -120,10 +190,9 @@ function stopTicklingSound() {
 }
 
 // Show the result using SweetAlert
-function showResult() {
-    const finalAngle = currentAngle % (2 * Math.PI);
-    const winningIndex = Math.floor((sections.length - (finalAngle / (2 * Math.PI) * sections.length)) % sections.length);
-    const winningAmount = sections[winningIndex];
+function showResult(predeterminedResult = null) {
+    // Use predetermined result or fallback to weighted selection
+    const winningAmount = predeterminedResult || getWeightedRandomResult();
 
     console.log(`🎉 Spin result: ${winningAmount}`);
 
@@ -139,7 +208,7 @@ function showResult() {
         spinButton.style.cursor = 'not-allowed';
     }
 
-    // Check if result is "TRY AGAIN"
+    // Check result type and show appropriate message
     if (winningAmount === 'TRY AGAIN') {
         Swal.fire({
             title: '🔄 Try Again!',
@@ -157,6 +226,19 @@ function showResult() {
                 setTimeout(() => {
                     spinWheel();
                 }, 500);
+            }
+        });
+    } else if (winningAmount === 'NOTHING') {
+        Swal.fire({
+            title: '😔 Hard Luck!',
+            text: 'Better luck next time!',
+            icon: 'error',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#4DA2FF',
+            backdrop: false,
+            allowOutsideClick: false,
+            customClass: {
+                container: 'no-backdrop'
             }
         });
     } else {
