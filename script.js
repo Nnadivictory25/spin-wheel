@@ -78,7 +78,7 @@ function spinWheel() {
 
     // Calculate initial parameters for natural deceleration to target
     const extraSpins = Math.floor(Math.random() * 3 + 3) * 2 * Math.PI; // 3-6 full rotations
-    const targetAngle = -(targetIndex * arcSize) - (arcSize / 2); // Target section center
+    const targetAngle = -(targetIndex * arcSize) - (arcSize / 2) - (Math.PI / 2); // Target section center aligned to top (SUI logo pointer)
     const totalRotation = extraSpins + (targetAngle - (currentAngle % (2 * Math.PI)));
 
     // Calculate realistic physics for smooth deceleration
@@ -104,14 +104,17 @@ function spinWheel() {
         currentAngle = startAngle + (totalRotation * easeOut);
 
         // Calculate current speed for sound synchronization
+        const currentProgress = progress;
         const prevProgress = Math.max(0, (frame - 1) / totalFrames);
-        const prevEaseOut = 1 - Math.pow(1 - prevProgress, 2);
-        const currentSpeed = (easeOut - prevEaseOut) * totalRotation * 50; // Convert to approximate degrees/sec
 
-        // Update sound speed to match current speed
+        // Calculate instantaneous speed based on derivative of easing function
+        // For quadratic ease-out: f(t) = 1 - (1-t)^2, so f'(t) = 2(1-t)
+        const instantaneousSpeed = 2 * (1 - currentProgress);
+
+        // Update sound speed to match wheel speed
         if (spinSound) {
-            const speedRatio = currentSpeed / (totalRotation * 0.02); // Normalize
-            const playbackRate = Math.max(0.3, Math.min(1.5, 0.3 + speedRatio * 1.2));
+            // Map speed to playback rate (1.5 at start, 0.3 at end)
+            const playbackRate = Math.max(0.3, Math.min(1.5, 0.3 + instantaneousSpeed * 1.2));
             spinSound.playbackRate = playbackRate;
         }
 
