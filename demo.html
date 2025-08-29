@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spin Wheel</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+    <div class="wheel-container">
+        <canvas id="spinWheel" width="400" height="400"></canvas>
+        <img src="sui2.svg" alt="SUI Logo" class="center-pointer">
+    </div>
+    <button class="spin-button" onclick="spinWheel()">Spin</button>
+
+    <!-- Demo button for testing - remove in production -->
+    <button class="clear-button" onclick="clearResult()">🧹 Clear Result (Demo)</button>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
